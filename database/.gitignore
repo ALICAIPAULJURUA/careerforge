@@ -1,1 +1,4 @@
 *.sqlite*
+*.sqlite.bak
+*.bak
+database.sqlite.bak

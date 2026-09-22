@@ -9,9 +9,23 @@ use App\Http\Controllers\ResumeController;
 use App\Http\Controllers\ResumeItemController;
 use App\Http\Controllers\ResumeSectionController;
 use App\Http\Controllers\SkillController;
+use App\Http\Controllers\Auth\OauthController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::get('/', function () {
+    return Auth::check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+});
+
+Route::get('/auth/{provider}/redirect', [OauthController::class, 'redirect'])
+    ->where('provider', 'google|linkedin|microsoft')
+    ->name('oauth.redirect');
+
+Route::get('/auth/{provider}/callback', [OauthController::class, 'callback'])
+    ->where('provider', 'google|linkedin|microsoft')
+    ->name('oauth.callback');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])

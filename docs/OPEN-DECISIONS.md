@@ -26,3 +26,43 @@
 
 - If a phase's work depends on an item still marked open above, the recommended default stated in that item should be used **unless the project owner has since resolved it explicitly in conversation or in this file**.
 - Any implementer (including an AI coding agent) that encounters a genuinely new ambiguity not covered above should add it to this file rather than silently choosing an interpretation, and should flag it to the project owner before proceeding on that specific piece of work.
+
+## Resolved / Operational Decisions (post-Phase 8)
+
+### 15. Destructive artisan commands must not wipe the real local SQLite file (2026-09-22 — RESOLVED)
+
+**Context.** After the Projects fix (`190ca24` — nullable `technologies.*.name`), a manual `migrate:fresh`/`db:wipe` run against the real `database/database.sqlite` silently replaced all real user rows (and all career data: profiles, experiences, educations, skills, projects, resumes) with factory/seed data (see diagnosis 2026-09-22). `php artisan test` was already correctly isolated:
+
+```xml
+<!-- phpunit.xml:20-26 — confirmed correct, do not change without review -->
+<env name="APP_ENV" value="testing"/>
+<env name="DB_CONNECTION" value="sqlite"/>
+<env name="DB_DATABASE" value=":memory:"/>
+```
+
+That config ensures `php artisan test` uses an in-memory SQLite DB, never the file at `database/database.sqlite` (`config/database.php:37` → `env('DB_DATABASE', database_path('database.sqlite'))`). Real data is therefore safe during `php artisan test`.
+
+**Decision.**
+
+1. **Guard in code — `app/Providers/AppServiceProvider.php:31`.** Any manual `migrate:fresh`, `migrate:reset`, `migrate:refresh`, `migrate:rollback`, or `db:wipe` run **outside** the `testing` + `:memory:` context now requires an explicit `--force` flag. Without it the command aborts with exit 1 and prints:
+
+   ```
+   Refusing to run "migrate:fresh" without --force.
+   WARNING: "migrate:fresh" targets the real local database "…/database/database.sqlite" (connection "sqlite", APP_ENV="local").
+   Re-run with --force to confirm you have a backup and intend to wipe "…".
+   ```
+
+   With `--force` outside testing, the same warning naming the resolved `DB_DATABASE` path is still printed before execution continues, so the target is never an accidental keystroke. In `APP_ENV=testing` the guard is bypassed so `RefreshDatabase` / `php artisan test` remain frictionless.
+
+2. **Backup discipline for local dev.** Before any further destructive-command testing against the real file, the local dev database **must** be backed up. Accepted forms:
+   - `Copy-Item database/database.sqlite database/database.sqlite.bak` (or `cp`) refreshed periodically — `database/.gitignore:1` (`*.sqlite*`) already git-ignores `*.bak`, so the backup never commits.
+   - Or a committed seed/backup script that can reconstruct representative data without depending on the file backup.
+   - Never commit the real `database.sqlite` itself; never run a destructive command without verifying the backup exists.
+
+3. **If a schema fix is needed, it must be a new additive migration only** — never `migrate:rollback`/`migrate:fresh`/`db:wipe` against the real DB. Rollbacks are only safe in `:memory:` tests.
+
+**Alternatives considered.** Git pre-hook, shell alias, or documentation-only warning — rejected because they do not survive across machines/shells. In-app `CommandStarting` guard travels with the repo and fails closed.
+
+**Verification.** `php artisan migrate:fresh` (no flag) → abort 1 + warning naming DB; `php artisan migrate:fresh --force` → warning + proceeds; `php artisan test` → 136 tests pass unchanged, still uses `:memory:` (see `php artisan test --filter` output).
+
+**Owner action if data was already wiped.** Do not reconstruct by guessing / re-seeding `users`. Restore `database.sqlite` / `database.sqlite.bak` from a pre-`2026-09-22T09:26:00Z` backup; if no backup exists, treat as data loss and re-create accounts via normal registration / `FR-003` password-reset flow — never `UPDATE users SET password=…` manually.

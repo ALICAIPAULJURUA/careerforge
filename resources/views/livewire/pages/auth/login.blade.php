@@ -61,6 +61,27 @@ new #[Layout('layouts.guest')] class extends Component
             {{ __('Log in') }}
         </x-primary-button>
 
+        <div class="relative flex items-center py-2">
+            <div class="flex-grow border-t border-slate-200"></div>
+            <span class="mx-4 flex-shrink text-xs font-medium uppercase tracking-widest text-slate-400">{{ __('or') }}</span>
+            <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+
+        <div class="space-y-2.5">
+            <a href="{{ route('oauth.redirect', 'google') }}" class="flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-200 focus-visible:ring-offset-2 transition-colors">
+                <x-icons.google class="h-4 w-4 shrink-0" />
+                {{ __('Continue with Google') }}
+            </a>
+            <a href="{{ route('oauth.redirect', 'linkedin') }}" class="flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-200 focus-visible:ring-offset-2 transition-colors">
+                <x-icons.linkedin class="h-4 w-4 shrink-0" />
+                {{ __('Continue with LinkedIn') }}
+            </a>
+            <a href="{{ route('oauth.redirect', 'microsoft') }}" class="flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-200 focus-visible:ring-offset-2 transition-colors">
+                <x-icons.microsoft class="h-4 w-4 shrink-0" />
+                {{ __('Continue with Microsoft') }}
+            </a>
+        </div>
+
         <p class="text-center text-sm text-slate-600">
             {{ __("Don't have an account?") }}
             <a href="{{ route('register') }}" wire:navigate class="font-medium text-ink-800 hover:text-ink-900 hover:underline">{{ __('Create one') }}</a>

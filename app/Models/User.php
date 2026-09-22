@@ -43,6 +43,11 @@ class User extends Authenticatable
         return $this->hasMany(Resume::class);
     }
 
+    public function oauthProviders(): HasMany
+    {
+        return $this->hasMany(OauthProvider::class);
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -52,6 +57,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'email_verified_at',
     ];
 
     /**
