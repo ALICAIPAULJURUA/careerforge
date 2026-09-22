@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --color-ink: 15 31 60;
+        --color-honey: 198 161 91;
+        --color-surface: 248 249 250;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+        @apply bg-surface-50 text-slate-700 font-sans leading-relaxed;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+
+    h1, h2, h3, h4, h5 {
+        @apply font-heading font-semibold tracking-tight text-ink-800;
+        font-feature-settings: normal;
+    }
+
+    /* Accessible focus */
+    *:focus-visible {
+        @apply outline-none ring-2 ring-honey-600 ring-offset-2 ring-offset-white;
+    }
+
+    /* Selection */
+    ::selection {
+        @apply bg-honey-100 text-ink-900;
+    }
+}
+
+@layer components {
+    /* Subtle scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        @apply bg-slate-100;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply bg-slate-300 rounded-full;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-slate-400;
+    }
+}
