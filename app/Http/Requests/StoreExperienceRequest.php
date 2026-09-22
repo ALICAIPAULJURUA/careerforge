@@ -25,7 +25,7 @@ class StoreExperienceRequest extends FormRequest
             'is_current' => ['sometimes', 'boolean'],
             'description' => ['nullable', 'string'],
             'achievements' => ['sometimes', 'array'],
-            'achievements.*.content' => ['required_with:achievements', 'string'],
+            'achievements.*.content' => ['nullable', 'string'],
             'achievements.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }

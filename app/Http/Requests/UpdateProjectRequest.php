@@ -27,7 +27,7 @@ class UpdateProjectRequest extends FormRequest
             'technologies' => ['sometimes', 'array'],
             'technologies.*.id' => ['sometimes', 'integer', 'exists:project_technologies,id'],
             'technologies.*._delete' => ['sometimes', 'boolean'],
-            'technologies.*.name' => ['exclude_if:technologies.*._delete,true', 'exclude_if:technologies.*._delete,1', 'required', 'string', 'max:100'],
+            'technologies.*.name' => ['exclude_if:technologies.*._delete,true', 'exclude_if:technologies.*._delete,1', 'nullable', 'string', 'max:100'],
             'technologies.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }

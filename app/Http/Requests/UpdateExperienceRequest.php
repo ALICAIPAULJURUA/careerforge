@@ -27,7 +27,7 @@ class UpdateExperienceRequest extends FormRequest
             'achievements' => ['sometimes', 'array'],
             'achievements.*.id' => ['sometimes', 'integer', 'exists:experience_achievements,id'],
             'achievements.*._delete' => ['sometimes', 'boolean'],
-            'achievements.*.content' => ['exclude_if:achievements.*._delete,true', 'exclude_if:achievements.*._delete,1', 'required', 'string'],
+            'achievements.*.content' => ['exclude_if:achievements.*._delete,true', 'exclude_if:achievements.*._delete,1', 'nullable', 'string'],
             'achievements.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }

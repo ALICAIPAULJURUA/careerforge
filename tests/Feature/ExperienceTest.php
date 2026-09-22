@@ -371,4 +371,47 @@ class ExperienceTest extends TestCase
         $response->assertSee('Job 1')->assertSee('Job 2')->assertSee('Job 3');
         $response->assertSee('Ach 1-1')->assertSee('Ach 2-2');
     }
+
+    public function test_second_experience_with_blank_achievements_via_ui_succeeds(): void
+    {
+        $user = User::factory()->create();
+
+        // First experience via UI form (3 inputs, one blank)
+        $this->actingAs($user)->post(route('experiences.store'), [
+            'job_title' => 'First',
+            'organization' => 'Org1',
+            'start_date' => '2020-01-01',
+            'end_date' => '2021-01-01',
+            'is_current' => false,
+            'achievements' => [
+                ['content' => 'A1', 'sort_order' => 0],
+                ['content' => '', 'sort_order' => 1],
+                ['content' => '', 'sort_order' => 2],
+            ],
+        ])->assertRedirect(route('experiences.index'));
+        $this->assertDatabaseCount('experiences', 1);
+        $this->assertDatabaseCount('experience_achievements', 1);
+
+        // Second experience same UI pattern – should succeed and not alter first
+        $first = $user->fresh()->experiences()->first();
+        $firstDataBefore = $first->fresh()->toArray();
+
+        $this->actingAs($user)->post(route('experiences.store'), [
+            'job_title' => 'Second',
+            'organization' => 'Org2',
+            'start_date' => '2022-01-01',
+            'end_date' => '2023-01-01',
+            'is_current' => false,
+            'achievements' => [
+                ['content' => '', 'sort_order' => 0],
+                ['content' => '', 'sort_order' => 1],
+                ['content' => '', 'sort_order' => 2],
+            ],
+        ])->assertRedirect(route('experiences.index'));
+
+        $this->assertDatabaseCount('experiences', 2);
+        $this->assertDatabaseHas('experiences', ['job_title' => 'First']);
+        $this->assertDatabaseHas('experiences', ['job_title' => 'Second']);
+        $this->assertEquals($firstDataBefore['job_title'], $first->fresh()->job_title);
+    }
 }

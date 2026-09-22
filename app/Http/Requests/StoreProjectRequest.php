@@ -25,7 +25,7 @@ class StoreProjectRequest extends FormRequest
             'project_url' => ['nullable', 'url', 'max:255'],
             'github_url' => ['nullable', 'url', 'max:255'],
             'technologies' => ['sometimes', 'array'],
-            'technologies.*.name' => ['required_with:technologies', 'string', 'max:100'],
+            'technologies.*.name' => ['nullable', 'string', 'max:100'],
             'technologies.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }

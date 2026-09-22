@@ -170,4 +170,112 @@ class ProjectTest extends TestCase
         $this->assertDatabaseCount('projects', 2);
         $this->assertDatabaseCount('project_technologies', 4);
     }
+
+    // --- Regression tests for hasMany bug (Phase 8 bug report) ---
+
+    public function test_user_can_create_second_project_after_already_having_one(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'First Project',
+        ])->assertRedirect(route('projects.index'));
+        $this->assertDatabaseCount('projects', 1);
+        $first = $user->fresh()->projects()->first();
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Second Project',
+        ])->assertRedirect(route('projects.index'));
+
+        $this->assertDatabaseCount('projects', 2);
+        $second = $user->fresh()->projects()->where('name', 'Second Project')->first();
+        $this->assertNotNull($second);
+        $this->assertNotEquals($first->id, $second->id);
+        $this->assertDatabaseHas('projects', ['id' => $first->id, 'name' => 'First Project']);
+        $this->assertDatabaseHas('projects', ['id' => $second->id, 'name' => 'Second Project']);
+    }
+
+    public function test_user_can_create_three_or_more_projects(): void
+    {
+        $user = User::factory()->create();
+
+        for ($i = 1; $i <= 3; $i++) {
+            $this->actingAs($user)->post(route('projects.store'), [
+                'name' => "Project $i",
+            ])->assertRedirect(route('projects.index'));
+        }
+
+        $this->assertEquals(3, $user->fresh()->projects()->count());
+        $this->assertDatabaseCount('projects', 3);
+        // Simulate UI form that always sends 3 technology inputs with blanks (should not fail validation)
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Project With Blank Techs',
+            'technologies' => [
+                ['name' => 'Laravel', 'sort_order' => 0],
+                ['name' => '', 'sort_order' => 1],
+                ['name' => '', 'sort_order' => 2],
+            ],
+        ])->assertRedirect(route('projects.index'));
+        $this->assertEquals(4, $user->fresh()->projects()->count());
+    }
+
+    public function test_creating_second_project_does_not_alter_first(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Original',
+            'description' => 'Original desc',
+            'role' => 'Dev',
+            'project_url' => 'https://original.example.com',
+        ])->assertRedirect(route('projects.index'));
+
+        $first = $user->fresh()->projects()->first();
+        $firstDataBefore = $first->fresh()->toArray();
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Second',
+            'description' => 'Second desc',
+        ])->assertRedirect(route('projects.index'));
+
+        $firstAfter = $first->fresh()->toArray();
+        $this->assertEquals($firstDataBefore['name'], $firstAfter['name']);
+        $this->assertEquals($firstDataBefore['description'], $firstAfter['description']);
+        $this->assertEquals($firstDataBefore['role'], $firstAfter['role']);
+        $this->assertEquals($firstDataBefore['project_url'], $firstAfter['project_url']);
+        $this->assertDatabaseHas('projects', ['id' => $first->id, 'name' => 'Original', 'description' => 'Original desc']);
+    }
+
+    public function test_second_project_via_ui_with_blank_technologies_succeeds(): void
+    {
+        $user = User::factory()->create();
+
+        // First project via UI form (3 tech inputs, one filled, two blank) – should succeed
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'First UI Project',
+            'technologies' => [
+                ['name' => 'PHP', 'sort_order' => 0],
+                ['name' => '', 'sort_order' => 1],
+                ['name' => '', 'sort_order' => 2],
+            ],
+        ])->assertRedirect(route('projects.index'));
+        $this->assertDatabaseCount('projects', 1);
+        $this->assertDatabaseCount('project_technologies', 1);
+
+        // Second project same UI pattern – previously failed due to required_with validation
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Second UI Project',
+            'technologies' => [
+                ['name' => '', 'sort_order' => 0],
+                ['name' => '', 'sort_order' => 1],
+                ['name' => '', 'sort_order' => 2],
+            ],
+        ])->assertRedirect(route('projects.index'));
+        $this->assertDatabaseCount('projects', 2);
+        // Second project should have 0 technologies (all blank ignored)
+        $second = $user->fresh()->projects()->where('name', 'Second UI Project')->first();
+        $this->assertEquals(0, $second->technologies()->count());
+        // First still intact
+        $this->assertDatabaseHas('projects', ['name' => 'First UI Project']);
+    }
 }
